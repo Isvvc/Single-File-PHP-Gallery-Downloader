@@ -13,18 +13,27 @@ enum SFPGDError: Error, CustomStringConvertible {
         switch self {
         case .invalidURL:
             return "Invalid URL"
+        case .invalidOutput:
+            return "Invalid output directory"
         }
     }
     
     case invalidURL
+    case invalidOutput
 }
 
 struct SFPGD: ParsableCommand {
-    @Flag(help: "Show verbose printout.")
+    @Flag(name: .shortAndLong, help: "Show verbose printout.")
     var verbose = false
 
     @Option(name: .shortAndLong, help: "Maximum depth of folders to traverse.")
-    var maxDepth: Int?
+    var depth: Int?
+    
+    @Option(name: .shortAndLong, help: "Maximum number of images to download.")
+    var count: Int?
+    
+    @Option(name: .shortAndLong, help: "Output directory.")
+    var output: String?
 
     @Argument(help: "The URL of the Single File PHP Gallery.")
     var url: String
@@ -33,8 +42,16 @@ struct SFPGD: ParsableCommand {
         guard let url = URL(string: url) else {
             throw SFPGDError.invalidURL
         }
+        let output = URL(fileURLWithPath: self.output ?? FileManager.default.currentDirectoryPath)
+        var isDirectory: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: output.path, isDirectory: &isDirectory),
+              isDirectory.boolValue else {
+            throw SFPGDError.invalidOutput
+        }
         
         let semaphor = DispatchSemaphore(value: 0)
+        
+        var images: [ImageInfo] = []
         
         URLSession.shared.dataTask(with: url) { data, response, error in
             guard error == nil,
@@ -48,13 +65,73 @@ struct SFPGD: ParsableCommand {
             let regex = try! NSRegularExpression(pattern: pattern, options: [])
             let range = NSRange(html.startIndex..<html.endIndex, in: html)
             
-            let images = regex.matches(in: html, options: [], range: range).map { ImageInfo(match: $0, in: html) }
-            print(images)
+            images = regex.matches(in: html, options: [], range: range).map { ImageInfo(match: $0, in: html) }
             
             semaphor.signal()
         }.resume()
         
         semaphor.wait()
+        
+        if verbose {
+            print("\(images.count) images found.")
+        }
+        
+        if let count = count {
+            if images.count > count {
+                images.removeLast(images.count - count)
+            }
+        }
+        
+        for image in images {
+            guard let name = image.name ?? image.link,
+                  let url = image.url(baseURL: url) else { continue }
+            if verbose {
+                print("Downloading \(name)...")
+            }
+            URLSession.shared.dataTask(with: url) { data, response, error in
+                guard error == nil,
+                      let data = data else {
+                    semaphor.signal()
+                    return
+                }
+                
+                // Get the image type
+                
+                let fileExtension: String?
+                
+                var b: UInt8 = 0
+                data.copyBytes(to: &b, count: 1)
+                
+                switch b {
+                case 0xFF:
+                    fileExtension = "jpg"
+                case 0x89:
+                    fileExtension = "png"
+                case 0x47:
+                    fileExtension = "gif"
+                default:
+                    fileExtension = nil
+                }
+                
+                // Save image to file
+                if let fileExtension = fileExtension {
+                    let fileName = "\(name).\(fileExtension)"
+                    let path = output.appendingPathComponent(fileName)
+                    
+                    do {
+                        try data.write(to: path)
+                    } catch {
+                        NSLog("\(error)")
+                    }
+                }
+                
+                semaphor.signal()
+            }.resume()
+            semaphor.wait()
+            
+        }
+        
+        print("Done!")
     }
 }
 
