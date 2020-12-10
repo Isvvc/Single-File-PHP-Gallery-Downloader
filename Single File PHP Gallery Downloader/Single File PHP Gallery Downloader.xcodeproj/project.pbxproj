@@ -24,7 +24,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		5927FCF72581A04B00AB9DAD /* Single File PHP Gallery Downloader */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "Single File PHP Gallery Downloader"; sourceTree = BUILT_PRODUCTS_DIR; };
+		5927FCF72581A04B00AB9DAD /* sfpgd */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = sfpgd; sourceTree = BUILT_PRODUCTS_DIR; };
 		5927FCFA2581A04B00AB9DAD /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		5941CC6E2581CEFC00500BD5 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -52,7 +52,7 @@
 		5927FCF82581A04B00AB9DAD /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				5927FCF72581A04B00AB9DAD /* Single File PHP Gallery Downloader */,
+				5927FCF72581A04B00AB9DAD /* sfpgd */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -69,9 +69,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		5927FCF62581A04B00AB9DAD /* Single File PHP Gallery Downloader */ = {
+		5927FCF62581A04B00AB9DAD /* sfpgd */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 5927FCFE2581A04B00AB9DAD /* Build configuration list for PBXNativeTarget "Single File PHP Gallery Downloader" */;
+			buildConfigurationList = 5927FCFE2581A04B00AB9DAD /* Build configuration list for PBXNativeTarget "sfpgd" */;
 			buildPhases = (
 				5927FCF32581A04B00AB9DAD /* Sources */,
 				5927FCF42581A04B00AB9DAD /* Frameworks */,
@@ -81,12 +81,12 @@
 			);
 			dependencies = (
 			);
-			name = "Single File PHP Gallery Downloader";
+			name = sfpgd;
 			packageProductDependencies = (
 				5927FD032581A0F100AB9DAD /* ArgumentParser */,
 			);
 			productName = "Single File PHP Gallery Downloader";
-			productReference = 5927FCF72581A04B00AB9DAD /* Single File PHP Gallery Downloader */;
+			productReference = 5927FCF72581A04B00AB9DAD /* sfpgd */;
 			productType = "com.apple.product-type.tool";
 		};
 /* End PBXNativeTarget section */
@@ -119,7 +119,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				5927FCF62581A04B00AB9DAD /* Single File PHP Gallery Downloader */,
+				5927FCF62581A04B00AB9DAD /* sfpgd */,
 			);
 		};
 /* End PBXProject section */
@@ -291,7 +291,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		5927FCFE2581A04B00AB9DAD /* Build configuration list for PBXNativeTarget "Single File PHP Gallery Downloader" */ = {
+		5927FCFE2581A04B00AB9DAD /* Build configuration list for PBXNativeTarget "sfpgd" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				5927FCFF2581A04B00AB9DAD /* Debug */,
