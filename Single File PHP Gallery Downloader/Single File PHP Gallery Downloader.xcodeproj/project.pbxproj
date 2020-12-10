@@ -3,11 +3,12 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 50;
+	objectVersion = 52;
 	objects = {
 
 /* Begin PBXBuildFile section */
 		5927FCFB2581A04B00AB9DAD /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5927FCFA2581A04B00AB9DAD /* main.swift */; };
+		5927FD042581A0F100AB9DAD /* ArgumentParser in Frameworks */ = {isa = PBXBuildFile; productRef = 5927FD032581A0F100AB9DAD /* ArgumentParser */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -32,6 +33,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5927FD042581A0F100AB9DAD /* ArgumentParser in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -78,6 +80,9 @@
 			dependencies = (
 			);
 			name = "Single File PHP Gallery Downloader";
+			packageProductDependencies = (
+				5927FD032581A0F100AB9DAD /* ArgumentParser */,
+			);
 			productName = "Single File PHP Gallery Downloader";
 			productReference = 5927FCF72581A04B00AB9DAD /* Single File PHP Gallery Downloader */;
 			productType = "com.apple.product-type.tool";
@@ -105,6 +110,9 @@
 				Base,
 			);
 			mainGroup = 5927FCEE2581A04B00AB9DAD;
+			packageReferences = (
+				5927FD022581A0F100AB9DAD /* XCRemoteSwiftPackageReference "swift-argument-parser" */,
+			);
 			productRefGroup = 5927FCF82581A04B00AB9DAD /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -285,6 +293,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		5927FD022581A0F100AB9DAD /* XCRemoteSwiftPackageReference "swift-argument-parser" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-argument-parser.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.3.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		5927FD032581A0F100AB9DAD /* ArgumentParser */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5927FD022581A0F100AB9DAD /* XCRemoteSwiftPackageReference "swift-argument-parser" */;
+			productName = ArgumentParser;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 5927FCEF2581A04B00AB9DAD /* Project object */;
 }
