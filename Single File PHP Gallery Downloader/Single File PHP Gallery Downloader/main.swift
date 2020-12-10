@@ -15,11 +15,14 @@ enum SFPGDError: Error, CustomStringConvertible {
             return "Invalid URL"
         case .invalidOutput:
             return "Invalid output directory"
+        case .outputDirectoryIsFile(let dir):
+            return "\(dir) file exists."
         }
     }
     
     case invalidURL
     case invalidOutput
+    case outputDirectoryIsFile(String)
 }
 
 struct SFPGD: ParsableCommand {
@@ -42,7 +45,7 @@ struct SFPGD: ParsableCommand {
         guard let url = URL(string: url) else {
             throw SFPGDError.invalidURL
         }
-        let output = URL(fileURLWithPath: self.output ?? FileManager.default.currentDirectoryPath)
+        var output = URL(fileURLWithPath: self.output ?? FileManager.default.currentDirectoryPath)
         var isDirectory: ObjCBool = false
         guard FileManager.default.fileExists(atPath: output.path, isDirectory: &isDirectory),
               isDirectory.boolValue else {
@@ -52,6 +55,7 @@ struct SFPGD: ParsableCommand {
         let semaphor = DispatchSemaphore(value: 0)
         
         var images: [ImageInfo] = []
+        var dirs: [ImageInfo] = []
         
         URLSession.shared.dataTask(with: url) { data, response, error in
             guard error == nil,
@@ -61,11 +65,16 @@ struct SFPGD: ParsableCommand {
                 return
             }
             
-            let pattern = #"imgLink\[(?<imgIndex>[0-9]*)]\s=\s'(?<imgLink>.*)';\simgName\[[0-9]*]\s=\s'(?<imgName>.*)';"#
-            let regex = try! NSRegularExpression(pattern: pattern, options: [])
+            let imgPattern = #"imgLink\[(?<index>[0-9]*)]\s=\s'(?<link>.*)';\simgName\[[0-9]*]\s=\s'(?<name>.*)';"#
+            let imgRegex = try! NSRegularExpression(pattern: imgPattern, options: [])
             let range = NSRange(html.startIndex..<html.endIndex, in: html)
             
-            images = regex.matches(in: html, options: [], range: range).map { ImageInfo(match: $0, in: html) }
+            images = imgRegex.matches(in: html, options: [], range: range).map { ImageInfo(match: $0, in: html) }
+            
+            let dirPattern = #"dirLink\[(?<index>[0-9]*)]\s=\s'(?<link>.*)';\sdirName\[[0-9]*]\s=\s'(?<name>.*)';"#
+            let dirRegex = try! NSRegularExpression(pattern: dirPattern, options: [])
+            
+            dirs = dirRegex.matches(in: html, options: [], range: range).map { ImageInfo(match: $0, in: html) }
             
             semaphor.signal()
         }.resume()
@@ -79,6 +88,25 @@ struct SFPGD: ParsableCommand {
         if let count = count {
             if images.count > count {
                 images.removeLast(images.count - count)
+            }
+        }
+        
+        if let thisDir = dirs.first,
+           let dirName = thisDir.name {
+            let url = output.appendingPathComponent(dirName)
+            var isDirectory: ObjCBool = false
+            if FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory) {
+                if !isDirectory.boolValue {
+                    throw SFPGDError.outputDirectoryIsFile(url.path)
+                }
+            } else {
+                try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+            }
+            
+            output = url
+            
+            if verbose {
+                print("Saving to \(output.lastPathComponent)/")
             }
         }
         
@@ -150,9 +178,9 @@ struct ImageInfo: CustomDebugStringConvertible {
     var name: String?
     
     init(match: NSTextCheckingResult, in string: String) {
-        link = matchString(match, matchName: "imgLink", in: string)
-        name = matchString(match, matchName: "imgName", in: string)
-        if let indexString = matchString(match, matchName: "imgIndex", in: string),
+        link = matchString(match, matchName: "link", in: string)
+        name = matchString(match, matchName: "name", in: string)
+        if let indexString = matchString(match, matchName: "index", in: string),
            let index = Int(indexString) {
             self.index = index
         }
