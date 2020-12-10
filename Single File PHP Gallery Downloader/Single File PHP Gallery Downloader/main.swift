@@ -8,11 +8,11 @@
 import Foundation
 import ArgumentParser
 
-enum SFPHPGDError: Error {
+enum SFPGDError: Error {
     case invalidURL
 }
 
-struct SFPHPGD: ParsableCommand {
+struct SFPGD: ParsableCommand {
     @Flag(help: "Show verbose printout.")
     var verbose = false
 
@@ -24,7 +24,7 @@ struct SFPHPGD: ParsableCommand {
 
     mutating func run() throws {
         guard let url = URL(string: url) else {
-            throw SFPHPGDError.invalidURL
+            throw SFPGDError.invalidURL
         }
         
         let semaphor = DispatchSemaphore(value: 0)
@@ -89,4 +89,4 @@ struct ImageInfo: CustomDebugStringConvertible {
     }
 }
 
-SFPHPGD.main()
+SFPGD.main()
