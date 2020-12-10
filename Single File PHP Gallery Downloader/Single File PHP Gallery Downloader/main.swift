@@ -94,6 +94,17 @@ struct ImageInfo: CustomDebugStringConvertible {
         }
         return output
     }
+    
+    func url(baseURL: URL) -> URL? {
+        guard let link = link,
+              var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false) else { return nil }
+        components.queryItems?.removeAll()
+        components.queryItems = [
+            .init(name: "cmd", value: "image"),
+            .init(name: "sfpg", value: link)
+        ]
+        return components.url
+    }
 }
 
 SFPGD.main()
