@@ -37,7 +37,18 @@ struct SFPHPGD: ParsableCommand {
                 return
             }
             
-            print(html)
+            let pattern = #"imgLink\[(?<imgIndex>[0-9]*)]\s=\s'(?<imgLink>.*)';\simgName\[[0-9]*]\s=\s'(?<imgName>.*)';"#
+            let regex = try! NSRegularExpression(pattern: pattern, options: [])
+            let range = NSRange(html.startIndex..<html.endIndex, in: html)
+            
+            for match in regex.matches(in: html, options: [], range: range) {
+                let nsrange = match.range(withName: "imgName")
+                if nsrange.location != NSNotFound,
+                   let range = Range(nsrange, in: html) {
+                    print(html[range])
+                }
+            }
+            
             semaphor.signal()
         }.resume()
         
