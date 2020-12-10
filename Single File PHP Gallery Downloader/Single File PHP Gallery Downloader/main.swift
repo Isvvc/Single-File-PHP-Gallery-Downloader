@@ -41,18 +41,51 @@ struct SFPHPGD: ParsableCommand {
             let regex = try! NSRegularExpression(pattern: pattern, options: [])
             let range = NSRange(html.startIndex..<html.endIndex, in: html)
             
-            for match in regex.matches(in: html, options: [], range: range) {
-                let nsrange = match.range(withName: "imgName")
-                if nsrange.location != NSNotFound,
-                   let range = Range(nsrange, in: html) {
-                    print(html[range])
-                }
-            }
+            let images = regex.matches(in: html, options: [], range: range).map { ImageInfo(match: $0, in: html) }
+            print(images)
             
             semaphor.signal()
         }.resume()
         
         semaphor.wait()
+    }
+}
+
+func matchString(_ match: NSTextCheckingResult, matchName: String, in string: String) -> String? {
+    let nsrange = match.range(withName: matchName)
+    if nsrange.location != NSNotFound,
+       let range = Range(nsrange, in: string) {
+        return String(string[range])
+    }
+    return nil
+}
+
+struct ImageInfo: CustomDebugStringConvertible {
+    var index: Int?
+    var link: String?
+    var name: String?
+    
+    init(match: NSTextCheckingResult, in string: String) {
+        link = matchString(match, matchName: "imgLink", in: string)
+        name = matchString(match, matchName: "imgName", in: string)
+        if let indexString = matchString(match, matchName: "imgIndex", in: string),
+           let index = Int(indexString) {
+            self.index = index
+        }
+    }
+    
+    var debugDescription: String {
+        var output = ""
+        if let index = index {
+            output += "[\(index)] "
+        }
+        if let name = name {
+            output += name + ": "
+        }
+        if let link = link {
+            output += link
+        }
+        return output
     }
 }
 
