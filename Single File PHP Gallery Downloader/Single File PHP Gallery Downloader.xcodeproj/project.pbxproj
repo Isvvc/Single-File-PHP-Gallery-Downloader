@@ -26,6 +26,7 @@
 /* Begin PBXFileReference section */
 		5927FCF72581A04B00AB9DAD /* Single File PHP Gallery Downloader */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "Single File PHP Gallery Downloader"; sourceTree = BUILT_PRODUCTS_DIR; };
 		5927FCFA2581A04B00AB9DAD /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		5941CC6E2581CEFC00500BD5 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -60,6 +61,7 @@
 			isa = PBXGroup;
 			children = (
 				5927FCFA2581A04B00AB9DAD /* main.swift */,
+				5941CC6E2581CEFC00500BD5 /* Info.plist */,
 			);
 			path = "Single File PHP Gallery Downloader";
 			sourceTree = "<group>";
@@ -253,8 +255,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = A4525544Q4;
 				ENABLE_HARDENED_RUNTIME = YES;
+				INFOPLIST_FILE = "$(SRCROOT)/Single File PHP Gallery Downloader/Info.plist";
+				MARKETING_VERSION = 0.1;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
 			};
@@ -264,8 +269,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = A4525544Q4;
 				ENABLE_HARDENED_RUNTIME = YES;
+				INFOPLIST_FILE = "$(SRCROOT)/Single File PHP Gallery Downloader/Info.plist";
+				MARKETING_VERSION = 0.1;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
 			};
