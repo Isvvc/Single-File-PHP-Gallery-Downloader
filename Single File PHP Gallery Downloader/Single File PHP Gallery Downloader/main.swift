@@ -8,7 +8,14 @@
 import Foundation
 import ArgumentParser
 
-enum SFPGDError: Error {
+enum SFPGDError: Error, CustomStringConvertible {
+    var description: String {
+        switch self {
+        case .invalidURL:
+            return "Invalid URL"
+        }
+    }
+    
     case invalidURL
 }
 
