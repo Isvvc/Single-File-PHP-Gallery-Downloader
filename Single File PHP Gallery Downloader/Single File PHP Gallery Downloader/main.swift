@@ -140,9 +140,11 @@ struct SFPGD: ParsableCommand {
         }
         
         let fileMananger = FileManager.default
-        images.forEach { image in
+        imagesLoop: for image in images {
+            guard downloaded < limit ?? .max else { break }
+            
             guard let name = image.name ?? image.link,
-                  let url = image.url(baseURL: url) else { return }
+                  let url = image.url(baseURL: url) else { continue }
             
             let namePath = output.appendingPathComponent(name)
             
@@ -152,15 +154,16 @@ struct SFPGD: ParsableCommand {
             // just gives you raw data and it's up to your browser to interpret the
             // image type. We have to just check if an image file of any the supported
             // formats exists, since we don't know which it will be until it is downloaded.
-
             for fileExtension in ["jpg", "png", "gif"] {
                 if fileMananger.fileExists(atPath: namePath.appendingPathExtension(fileExtension).path) {
                     if verbose {
                         print("File \(name).\(fileExtension) already exists. Skipping.")
                     }
-                    return
+                    continue imagesLoop
                 }
             }
+            
+            // Download the image
             
             if verbose {
                 print("Downloading \(name)...")
@@ -210,12 +213,17 @@ struct SFPGD: ParsableCommand {
         saved += images.count
         
         if saved < count ?? .max,
+           downloaded < limit ?? .max,
            depth < self.depth ?? 0 {
             for dir in dirs {
                 guard let url = dir.url(baseURL: url) else { continue }
                 try download(url: url, baseOutput: output, saved: &saved, downloaded: &downloaded, depth: depth + 1)
                 if let count = count,
                    saved >= count {
+                    break
+                }
+                if let limit = limit,
+                   downloaded >= limit {
                     break
                 }
             }
