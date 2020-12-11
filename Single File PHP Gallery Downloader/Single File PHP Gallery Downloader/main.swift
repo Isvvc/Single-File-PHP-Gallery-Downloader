@@ -28,8 +28,11 @@ enum SFPGDError: Error, CustomStringConvertible {
 struct SFPGD: ParsableCommand {
     @Flag(name: .shortAndLong, help: "Show verbose printout.")
     var verbose = false
+    
+    @Flag(name: .shortAndLong, help: "Recurively download subdirectories. Is overridden by --depth.")
+    var recursive = false
 
-    @Option(name: .shortAndLong, help: "Maximum depth of folders to traverse.")
+    @Option(name: .shortAndLong, help: "Maximum depth of folders to traverse. Overrides --recursive.")
     var depth: Int?
     
     @Option(name: .shortAndLong, help: "Maximum number of images to download.")
@@ -45,17 +48,29 @@ struct SFPGD: ParsableCommand {
         guard let url = URL(string: url) else {
             throw SFPGDError.invalidURL
         }
-        var output = URL(fileURLWithPath: self.output ?? FileManager.default.currentDirectoryPath)
+        let output = URL(fileURLWithPath: self.output ?? FileManager.default.currentDirectoryPath)
         var isDirectory: ObjCBool = false
         guard FileManager.default.fileExists(atPath: output.path, isDirectory: &isDirectory),
               isDirectory.boolValue else {
             throw SFPGDError.invalidOutput
         }
         
+        if depth == nil && recursive {
+            depth = .max
+        }
+        
+        try download(url: url, baseOutput: output)
+        
+        print("Done!")
+    }
+    
+    mutating func download(url: URL, baseOutput: URL, depth: Int = 0) throws {
         let semaphor = DispatchSemaphore(value: 0)
         
+        var output = baseOutput
         var images: [ImageInfo] = []
         var dirs: [ImageInfo] = []
+        var thisDir: ImageInfo?
         
         URLSession.shared.dataTask(with: url) { data, response, error in
             guard error == nil,
@@ -65,16 +80,24 @@ struct SFPGD: ParsableCommand {
                 return
             }
             
+            // Images are listed as imgLink, imgName, then imgInfo (which we don't need).
             let imgPattern = #"imgLink\[(?<index>[0-9]*)]\s=\s'(?<link>.*)';\simgName\[[0-9]*]\s=\s'(?<name>.*)';"#
             let imgRegex = try! NSRegularExpression(pattern: imgPattern, options: [])
             let range = NSRange(html.startIndex..<html.endIndex, in: html)
             
             images = imgRegex.matches(in: html, options: [], range: range).map { ImageInfo(match: $0, in: html) }
             
-            let dirPattern = #"dirLink\[(?<index>[0-9]*)]\s=\s'(?<link>.*)';\sdirName\[[0-9]*]\s=\s'(?<name>.*)';"#
+            // The current directory is listed as dirLink then dirName.
+            let thisDirPattern = #"dirLink\[(?<index>[0-9]*)]\s=\s'(?<link>.*)';\sdirName\[[0-9]*]\s=\s'(?<name>.*)';"#
+            let thisDirRegex = try! NSRegularExpression(pattern: thisDirPattern, options: [])
+            
+            thisDir = thisDirRegex.matches(in: html, options: [], range: range).map { ImageInfo(match: $0, in: html, isDir: true) }.first
+            
+            // Subdirectory links are listed as dirName then dirLink.
+            let dirPattern = #"dirName\[(?<index>[0-9]*)]\s=\s'(?<name>.*)';\sdirLink\[[0-9]*]\s=\s'(?<link>.*)';"#
             let dirRegex = try! NSRegularExpression(pattern: dirPattern, options: [])
             
-            dirs = dirRegex.matches(in: html, options: [], range: range).map { ImageInfo(match: $0, in: html) }
+            dirs = dirRegex.matches(in: html, options: [], range: range).map { ImageInfo(match: $0, in: html, isDir: true) }
             
             semaphor.signal()
         }.resume()
@@ -91,7 +114,7 @@ struct SFPGD: ParsableCommand {
             }
         }
         
-        if let thisDir = dirs.first,
+        if let thisDir = thisDir,
            let dirName = thisDir.name {
             let url = output.appendingPathComponent(dirName)
             var isDirectory: ObjCBool = false
@@ -156,10 +179,14 @@ struct SFPGD: ParsableCommand {
                 semaphor.signal()
             }.resume()
             semaphor.wait()
-            
         }
         
-        print("Done!")
+        if depth < self.depth ?? 0 {
+            for dir in dirs {
+                guard let url = dir.url(baseURL: url) else { continue }
+                try download(url: url, baseOutput: output, depth: depth + 1)
+            }
+        }
     }
 }
 
@@ -176,14 +203,16 @@ struct ImageInfo: CustomDebugStringConvertible {
     var index: Int?
     var link: String?
     var name: String?
+    var dir: Bool
     
-    init(match: NSTextCheckingResult, in string: String) {
+    init(match: NSTextCheckingResult, in string: String, isDir: Bool = false) {
         link = matchString(match, matchName: "link", in: string)
         name = matchString(match, matchName: "name", in: string)
         if let indexString = matchString(match, matchName: "index", in: string),
            let index = Int(indexString) {
             self.index = index
         }
+        dir = isDir
     }
     
     var debugDescription: String {
@@ -204,10 +233,10 @@ struct ImageInfo: CustomDebugStringConvertible {
         guard let link = link,
               var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false) else { return nil }
         components.queryItems?.removeAll()
-        components.queryItems = [
-            .init(name: "cmd", value: "image"),
-            .init(name: "sfpg", value: link)
-        ]
+        if !dir {
+            components.queryItems?.append(.init(name: "cmd", value: "image"))
+        }
+        components.queryItems?.append(.init(name: "sfpg", value: link))
         return components.url
     }
 }
