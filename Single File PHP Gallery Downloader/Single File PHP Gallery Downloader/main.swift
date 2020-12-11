@@ -59,12 +59,14 @@ struct SFPGD: ParsableCommand {
             depth = .max
         }
         
-        try download(url: url, baseOutput: output)
+        var downloaded = 0
+        
+        try download(url: url, baseOutput: output, downloaded: &downloaded)
         
         print("Done!")
     }
     
-    mutating func download(url: URL, baseOutput: URL, depth: Int = 0) throws {
+    mutating func download(url: URL, baseOutput: URL, downloaded: inout Int, depth: Int = 0) throws {
         let semaphor = DispatchSemaphore(value: 0)
         
         var output = baseOutput
@@ -109,8 +111,8 @@ struct SFPGD: ParsableCommand {
         }
         
         if let count = count {
-            if images.count > count {
-                images.removeLast(images.count - count)
+            if images.count > count - downloaded {
+                images.removeLast(images.count - (count - downloaded))
             }
         }
         
@@ -180,11 +182,17 @@ struct SFPGD: ParsableCommand {
             }.resume()
             semaphor.wait()
         }
+        downloaded += images.count
         
-        if depth < self.depth ?? 0 {
+        if downloaded < count ?? .max,
+           depth < self.depth ?? 0 {
             for dir in dirs {
                 guard let url = dir.url(baseURL: url) else { continue }
-                try download(url: url, baseOutput: output, depth: depth + 1)
+                try download(url: url, baseOutput: output, downloaded: &downloaded, depth: depth + 1)
+                if let count = count,
+                   downloaded >= count {
+                    break
+                }
             }
         }
     }
