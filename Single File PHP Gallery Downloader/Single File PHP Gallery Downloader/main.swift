@@ -35,11 +35,14 @@ struct SFPGD: ParsableCommand {
     @Option(name: .shortAndLong, help: "Maximum depth of folders to traverse. Overrides --recursive.")
     var depth: Int?
     
-    @Option(name: .shortAndLong, help: "Maximum number of images to download.")
+    @Option(name: .shortAndLong, help: "Maximum number of images to save, including existing files.")
     var count: Int?
     
     @Option(name: .shortAndLong, help: "Output directory.")
     var output: String?
+    
+    @Option(name: .shortAndLong, help: "Limit of number of new images to download.")
+    var limit: Int?
 
     @Argument(help: "The URL of the Single File PHP Gallery.")
     var url: String
@@ -59,14 +62,15 @@ struct SFPGD: ParsableCommand {
             depth = .max
         }
         
+        var saved = 0
         var downloaded = 0
         
-        try download(url: url, baseOutput: output, downloaded: &downloaded)
+        try download(url: url, baseOutput: output, saved: &saved, downloaded: &downloaded)
         
         print("Done!")
     }
     
-    mutating func download(url: URL, baseOutput: URL, downloaded: inout Int, depth: Int = 0) throws {
+    mutating func download(url: URL, baseOutput: URL, saved: inout Int, downloaded: inout Int, depth: Int = 0) throws {
         let semaphor = DispatchSemaphore(value: 0)
         
         var output = baseOutput
@@ -111,8 +115,8 @@ struct SFPGD: ParsableCommand {
         }
         
         if let count = count {
-            if images.count > count - downloaded {
-                images.removeLast(images.count - (count - downloaded))
+            if images.count > count - saved {
+                images.removeLast(images.count - (count - saved))
             }
         }
         
@@ -135,9 +139,29 @@ struct SFPGD: ParsableCommand {
             }
         }
         
-        for image in images {
+        let fileMananger = FileManager.default
+        images.forEach { image in
             guard let name = image.name ?? image.link,
-                  let url = image.url(baseURL: url) else { continue }
+                  let url = image.url(baseURL: url) else { return }
+            
+            let namePath = output.appendingPathComponent(name)
+            
+            // Check if the file already exists
+            
+            // Unfortunately, SFPG does not tell you the file format of images. It
+            // just gives you raw data and it's up to your browser to interpret the
+            // image type. We have to just check if an image file of any the supported
+            // formats exists, since we don't know which it will be until it is downloaded.
+
+            for fileExtension in ["jpg", "png", "gif"] {
+                if fileMananger.fileExists(atPath: namePath.appendingPathExtension(fileExtension).path) {
+                    if verbose {
+                        print("File \(name).\(fileExtension) already exists. Skipping.")
+                    }
+                    return
+                }
+            }
+            
             if verbose {
                 print("Downloading \(name)...")
             }
@@ -167,30 +191,31 @@ struct SFPGD: ParsableCommand {
                 }
                 
                 // Save image to file
+                var path = namePath
                 if let fileExtension = fileExtension {
-                    let fileName = "\(name).\(fileExtension)"
-                    let path = output.appendingPathComponent(fileName)
-                    
-                    do {
-                        try data.write(to: path)
-                    } catch {
-                        NSLog("\(error)")
-                    }
+                    path = namePath.appendingPathExtension(fileExtension)
+                }
+                
+                do {
+                    try data.write(to: path)
+                } catch {
+                    NSLog("\(error)")
                 }
                 
                 semaphor.signal()
             }.resume()
             semaphor.wait()
+            downloaded += 1
         }
-        downloaded += images.count
+        saved += images.count
         
-        if downloaded < count ?? .max,
+        if saved < count ?? .max,
            depth < self.depth ?? 0 {
             for dir in dirs {
                 guard let url = dir.url(baseURL: url) else { continue }
-                try download(url: url, baseOutput: output, downloaded: &downloaded, depth: depth + 1)
+                try download(url: url, baseOutput: output, saved: &saved, downloaded: &downloaded, depth: depth + 1)
                 if let count = count,
-                   downloaded >= count {
+                   saved >= count {
                     break
                 }
             }
